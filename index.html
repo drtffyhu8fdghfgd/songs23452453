@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" style="scrollbar-gutter: stable; --header-height: 100px;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>College Dropout</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)),
+    url("https://i.imgur.com/FxZWhZq.png") center center / cover no-repeat fixed;
+  color:#f5f5f5;
+  font-family:'Untitled Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+.main-content{display:flex;flex-direction:column;padding:0 64px;flex:1;margin:0;width:100%}
+@media(max-width:640px){.main-content{padding:0 24px}}
+
+.layout{display:flex;gap:48px;padding-top:48px;padding-bottom:140px;align-items:flex-start}
+
+/* Left column (cover/disc) — displayed on the right, centered between the tracklist's edge and the true right edge of the screen */
+.left-col{flex:1;min-width:280px;align-self:stretch;order:2;display:flex;align-items:center;justify-content:center}
+@media(max-width:640px){.left-col{width:100%;order:1;display:block}}
+
+/* Cover */
+.cover-area{position:relative;width:min(520px,100%);aspect-ratio:1;height:auto;overflow:visible;border-radius:16px;flex-shrink:0;transform:translateX(45px)}
+@media(max-width:640px){.cover-area{width:100%;height:auto;aspect-ratio:1;transform:none}}
+
+.tilt-group{position:absolute;inset:0;transition:transform .55s cubic-bezier(.23,1,.32,1);transform:perspective(900px) rotateX(0) rotateY(0) scale(1);--gx:30%;--gy:25%}
+.tilt-group::after{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse 58% 48% at var(--gx) var(--gy),rgba(255,255,255,.055) 0%,rgba(255,255,255,.015) 45%,transparent 65%);opacity:0;pointer-events:none;transition:opacity .35s ease .12s;z-index:2}
+.tilt-group:hover::after{opacity:1}
+
+.disc-slide{position:absolute;top:0;left:0;width:100%;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1);transform:translateX(0);z-index:0;will-change:transform}
+.disc-slide.visible{transform:translateX(-90px)}
+.disc-slide .disc-inner{width:100%;height:100%;border-radius:50%;overflow:hidden;position:relative}
+.disc-slide .disc-inner img{width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none}
+.disc-slide .disc-overlay{position:absolute;inset:0;background:rgba(147,147,147,.7);z-index:1;border-radius:50%}
+.disc-slide.playing .disc-inner{animation:spin 8s linear infinite}
+
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.art-wrap{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;z-index:1;border-radius:16px}
+.art-wrap img{width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none}
+
+/* Right column (tracklist/meta) — now displayed on the left */
+.right-col{flex:0 1 480px;min-width:0;display:flex;flex-direction:column;order:1}
+
+.project-meta{margin-bottom:24px}
+.project-meta h1{font-size:32px;font-weight:700;line-height:1.1;letter-spacing:-.5px}
+.project-meta .byline{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,.5);flex-wrap:wrap;white-space:nowrap;margin-top:4px}
+.project-meta .byline .sep{opacity:.4}
+
+.action-btns-row{display:flex;gap:12px;align-items:center;margin-top:16px}
+.action-btns-row button{width:44px;height:44px;border-radius:16px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .3s;background:rgba(255,255,255,.06);color:#f5f5f5}
+.action-btns-row button:hover{opacity:.8}
+.action-btns-row .play-btn{background:#f5f5f5;color:#191919;padding:0;line-height:0}
+.action-btns-row .play-btn svg{display:block}
+
+.tracklist-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:300px}
+.tracklist{list-style:none;display:flex;flex-direction:column;padding:0}
+
+.track{display:flex;align-items:center;border-radius:16px;border:2px solid transparent;transition:all .2s;user-select:none;cursor:pointer}
+.track:hover{background:rgba(255,255,255,.04)}
+.track.active{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04)}
+.track .track-btn{display:flex;align-items:center;width:100%;padding:9px 12px;background:none;border:none;color:inherit;cursor:pointer;text-align:left;font-family:inherit}
+.track .num{width:30px;text-align:center;color:rgba(255,255,255,.5);font-size:14px;flex-shrink:0;margin-right:8px}
+.track.active .num{display:none}
+.track .soundbars{display:none;width:30px;height:100%;flex-shrink:0;margin-right:8px;align-items:center;justify-content:center}
+.track.active .soundbars{display:flex}
+.track .soundbars svg{width:20px;height:20px}
+.track .soundbars .bar{fill:#f5f5f5;animation:1s ease-in-out infinite soundbar}
+.track:not(.playing) .soundbars .bar{animation:none;y:9px;height:6px}
+@keyframes soundbar{0%,to{y:9px;height:6px}30%{y:2px;height:20px}60%{y:6px;height:12px}80%{y:4px;height:16px}}
+
+.track .track-info{flex:1;min-width:0;display:flex;flex-direction:column}
+.track .track-info .name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:12px}
+.track .track-info .sub{font-size:12px;color:rgba(255,255,255,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.track .more-btn{width:24px;height:24px;border-radius:4px;border:none;background:none;color:rgba(255,255,255,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;flex-shrink:0;margin-right:12px;opacity:0}
+.track:hover .more-btn{opacity:1}
+.track .more-btn:hover{background:rgba(255,255,255,.06);color:#f5f5f5}
+
+/* Playbar */
+.playbar-outer{position:fixed;left:50%;bottom:0;z-index:6;transform:translateX(-50%);pointer-events:none;padding-bottom:24px}
+.playbar-inner{pointer-events:auto;background:rgba(30,30,30,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:100px;padding:10px 24px;display:flex;align-items:center;gap:20px;opacity:0;transition:opacity .3s}
+.playbar-inner.visible{opacity:1}
+
+.playbar-controls{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.playbar-controls button{width:36px;height:36px;border:none;background:none;color:#f5f5f5;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.playbar-controls button:hover{background:rgba(255,255,255,.06)}
+.playbar-controls .pp-btn{background:#f5f5f5;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+
+.playbar-center{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.playbar-art{width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0}
+.playbar-art img{width:100%;height:100%;object-fit:cover}
+.playbar-art.playing img{animation:spin 8s linear infinite}
+.playbar-info{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.playbar-info .title-wrap{position:relative;height:22px;width:150px;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(to right,transparent 0,#f5f5f5 8px,#f5f5f5 calc(100% - 8px),transparent 100%);-webkit-mask-image:linear-gradient(to right,transparent 0,#f5f5f5 8px,#f5f5f5 calc(100% - 8px),transparent 100%)}
+.playbar-info .title-wrap .scroll{display:inline-block;padding:0 16px;animation:marquee 8s linear infinite;animation-play-state:paused;font-size:14px;font-weight:500;line-height:22px}
+.playbar-info .title-wrap .scroll.active{animation-play-state:running}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.playbar-info .subtitle{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Waveform progress bar */
+.playbar-progress{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.playbar-progress .time{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap;min-width:30px}
+.waveform-wrap{position:relative;width:140px;height:32px;cursor:pointer;overflow:hidden}
+.waveform-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+
+/* Loading */
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 32px;gap:16px;color:rgba(255,255,255,.5)}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.06);border-top-color:#f5f5f5;border-radius:50%;animation:spin .8s linear infinite}
+.hidden{display:none!important}
+
+/* Mobile */
+@media(max-width:640px){
+  .layout{flex-direction:column;gap:24px;padding-bottom:160px;padding-top:24px}
+  .left-col{width:100%;order:1;flex:0 0 auto}
+  .right-col{order:2;flex:1 1 auto}
+  .project-meta h1{font-size:26px}
+  .playbar-inner{border-radius:100px;padding:8px 14px;gap:12px}
+  .playbar-info .title-wrap{width:90px}
+  .waveform-wrap{width:80px}
+  .disc-slide.visible{transform:translateX(40px)}
+  .left-col{width:100%}
+  .cover-area{width:100%;height:auto;transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="main-content">
+  <div class="layout">
+    <div class="left-col">
+      <div class="cover-area" id="coverArea">
+        <div class="tilt-group" id="tiltGroup" style="transform: perspective(900px) rotateX(0deg) rotateY(0deg) scale(1); --gx: -15.3%; --gy: 61.7%;">
+          <div class="disc-slide visible playing" id="discSlide">
+            <div class="disc-inner" id="discInner">
+              <div class="disc-overlay"></div>
+              <img alt="Disc" src="./College Dropout_files/default-disc-88cotjly.png" draggable="false" id="discImg">
+            </div>
+          </div>
+          <div class="art-wrap">
+            <img alt="Cover" src="./College Dropout_files/1861477386816545-1862042872583595.webp" id="coverArt" crossorigin="anonymous">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="project-meta">
+        <h1>College Dropout</h1>
+        <div class="byline">
+          <span>Kanye West</span>
+          <span class="sep">·</span>
+          <span id="trackCount">13 tracks</span>
+        </div>
+        <div class="action-btns-row">
+          <button id="shuffleToggle" title="Shuffle" style="opacity: 0.5;">⇄</button>
+          <button class="play-btn" id="playAllBtn"><svg width="14" height="14" viewBox="0 0 14 14" fill="#191919"><rect x="2" y="1" width="4" height="12" rx="1"></rect><rect x="8" y="1" width="4" height="12" rx="1"></rect></svg></button>
+          <button id="moreBtn" title="More">⋮</button>
+        </div>
+      </div>
+
+      <div class="tracklist-wrap">
+        <div class="loading-screen hidden" id="loadingScreen">
+          <div class="spinner"></div>
+          <span>Loading tracks...</span>
+        </div>
+        <ul class="tracklist" id="tracklist"><li class="track" data-idx="0">
+      <button class="track-btn">
+        <span class="num">1</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">All Falls Down</div>
+          <div class="sub">3:44</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="1">
+      <button class="track-btn">
+        <span class="num">2</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Breathe In Breathe Out</div>
+          <div class="sub">4:07</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="2">
+      <button class="track-btn">
+        <span class="num">3</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Family Business</div>
+          <div class="sub">4:38</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="3">
+      <button class="track-btn">
+        <span class="num">4</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Get Em High</div>
+          <div class="sub">4:48</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="4">
+      <button class="track-btn">
+        <span class="num">5</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">I'll Fly Away</div>
+          <div class="sub">1:10</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track active playing" data-idx="5">
+      <button class="track-btn">
+        <span class="num">6</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Jesus Walks</div>
+          <div class="sub">3:13</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="6">
+      <button class="track-btn">
+        <span class="num">7</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Never Let Me Down</div>
+          <div class="sub">5:24</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="7">
+      <button class="track-btn">
+        <span class="num">8</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">School Spirit</div>
+          <div class="sub">3:02</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="8">
+      <button class="track-btn">
+        <span class="num">9</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Spaceship</div>
+          <div class="sub">5:24</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="9">
+      <button class="track-btn">
+        <span class="num">10</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">The New Workout Plan</div>
+          <div class="sub">5:23</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="10">
+      <button class="track-btn">
+        <span class="num">11</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Through The Wirw</div>
+          <div class="sub">3:40</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="11">
+      <button class="track-btn">
+        <span class="num">12</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">Two Words</div>
+          <div class="sub">4:25</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li><li class="track" data-idx="12">
+      <button class="track-btn">
+        <span class="num">13</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">We Don't Care</div>
+          <div class="sub">4:00</div>
+        </div>
+        </button><button class="more-btn">⋮</button>
+      </li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="playbar-outer" id="playbarOuter">
+  <div class="playbar-inner visible" id="playbarInner">
+    <div class="playbar-controls">
+      <button id="prevBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><polygon points="11,1 5,7 11,13"></polygon><rect x="3" y="1" width="2" height="12" rx="0.5"></rect></svg>
+      </button>
+      <button class="pp-btn" id="playBtn"><svg width="14" height="14" viewBox="0 0 14 14" fill="#191919"><rect x="2" y="1" width="4" height="12" rx="1"></rect><rect x="8" y="1" width="4" height="12" rx="1"></rect></svg></button>
+      <button id="nextBtn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><polygon points="3,1 9,7 3,13"></polygon><rect x="9" y="1" width="2" height="12" rx="0.5"></rect></svg>
+      </button>
+    </div>
+    <div class="playbar-center">
+      <div class="playbar-art playing" id="playbarArt">
+        <img src="./College Dropout_files/1861477386816545-1862042872583595.webp" alt="" id="playbarArtImg">
+      </div>
+      <div class="playbar-info">
+        <div class="title-wrap"><span class="scroll" id="playbarTitle">Jesus Walks</span></div>
+        <div class="subtitle" id="playbarSub">Kanye West</div>
+      </div>
+    </div>
+    <div class="playbar-progress">
+      <span class="time" id="curTime">0:24</span>
+      <div class="waveform-wrap" id="waveformWrap">
+        <canvas id="waveformCanvas" width="140" height="32"></canvas>
+      </div>
+      <span class="time" id="totTime">3:13</span>
+    </div>
+  </div>
+</div>
+
+<audio id="audio" src="https://raw.githubusercontent.com/drtffyhu8fdghfgd/songs23452453/main/Jesus%20Walks.mp3"></audio>
+
+<script>
+const COVER_URL = 'https://raw.githubusercontent.com/drtffyhu8fdghfgd/songs23452453/main/1861477386816545-1862042872583595.webp';
+const REPO_API = 'https://api.github.com/repos/drtffyhu8fdghfgd/songs23452453/contents';
+
+const coverArt = document.getElementById('coverArt');
+const discSlide = document.getElementById('discSlide');
+const tiltGroup = document.getElementById('tiltGroup');
+const playbarArt = document.getElementById('playbarArt');
+const playbarArtImg = document.getElementById('playbarArtImg');
+const playbarTitle = document.getElementById('playbarTitle');
+const playbarSub = document.getElementById('playbarSub');
+const playBtn = document.getElementById('playBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const curTime = document.getElementById('curTime');
+const totTime = document.getElementById('totTime');
+const tracklist = document.getElementById('tracklist');
+const loadingScreen = document.getElementById('loadingScreen');
+const playbarOuter = document.getElementById('playbarOuter');
+const playbarInner = document.getElementById('playbarInner');
+const trackCount = document.getElementById('trackCount');
+const shuffleToggle = document.getElementById('shuffleToggle');
+const playAllBtn = document.getElementById('playAllBtn');
+const audio = document.getElementById('audio');
+const waveformCanvas = document.getElementById('waveformCanvas');
+const waveformWrap = document.getElementById('waveformWrap');
+
+coverArt.src = COVER_URL;
+playbarArtImg.src = COVER_URL;
+
+let songs = [];
+let currentIdx = 0;
+let playing = false;
+let shuffled = false;
+
+let waveAnimId = null;
+let barHeights = [];
+
+function fmt(s) {
+  if (isNaN(s)||!isFinite(s)) return '0:00';
+  return Math.floor(s/60)+':'+(Math.floor(s%60)<10?'0':'')+Math.floor(s%60);
+}
+
+function getDur(url) {
+  return new Promise(r => {
+    let a = new Audio();
+    a.preload='metadata';
+    a.onloadedmetadata=()=>{r(a.duration);a.remove()};
+    a.onerror=()=>{r(0);a.remove()};
+    a.src=url;
+  });
+}
+
+function genBars(){barHeights=[];for(let i=0;i<64;i++)barHeights.push(4+Math.random()*20)}
+
+function setPauseIcon() {
+  playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="#191919"><rect x="2" y="1" width="4" height="12" rx="1"/><rect x="8" y="1" width="4" height="12" rx="1"/></svg>';
+  playAllBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="#191919"><rect x="2" y="1" width="4" height="12" rx="1"/><rect x="8" y="1" width="4" height="12" rx="1"/></svg>';
+}
+
+function setPlayIcon() {
+  playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="#191919"><polygon points="3,1 13,7 3,13"/></svg>';
+  playAllBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><polygon points="3,1 13,7 3,13"/></svg>';
+}
+
+function drawWaveform() {
+  const ctx=waveformCanvas.getContext('2d');
+  const rect=waveformWrap.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const w=rect.width*dpr;
+  const h=rect.height*dpr;
+  if(waveformCanvas.width!==w||waveformCanvas.height!==h){
+    waveformCanvas.width=w;
+    waveformCanvas.height=h;
+  }
+  ctx.clearRect(0,0,w,h);
+  ctx.scale(dpr,dpr);
+  const bars=64;
+  const gap=1;
+  const barW=(rect.width-gap*(bars-1))/bars;
+  const played=audio.duration?audio.currentTime/audio.duration:0;
+  for(let i=0;i<bars;i++){
+    const val=barHeights[i]/24;
+    const bh=Math.max(2,val*rect.height*0.8);
+    const x=i*(barW+gap);
+    const y=(rect.height-bh)/2;
+    ctx.fillStyle=i/bars<played?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)';
+    ctx.fillRect(x,y,barW,bh);
+  }
+}
+
+function resizeCanvas(){drawWaveform()}
+
+function startWaveform(){
+  genBars();
+  if(waveAnimId)cancelAnimationFrame(waveAnimId);
+  function tick(){
+    drawWaveform();
+    waveAnimId=requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function stopWaveform(){
+  if(waveAnimId){cancelAnimationFrame(waveAnimId);waveAnimId=null}
+  drawWaveform();
+}
+
+async function loadSongs() {
+  try {
+    let res = await fetch(REPO_API);
+    let data = await res.json();
+    songs = data.filter(f=>f.name.endsWith('.mp3')&&f.size>1000).map((f,i)=>({idx:i,name:f.name.replace('.mp3',''),url:f.download_url,dur:0}));
+    if (!songs.length) throw Error('No songs');
+    trackCount.textContent = songs.length+' tracks';
+    loadingScreen.classList.add('hidden');
+    tracklist.classList.remove('hidden');
+    playbarOuter.classList.remove('hidden');
+    setTimeout(()=>playbarInner.classList.add('visible'),100);
+    await Promise.all(songs.map(s=>getDur(s.url).then(d=>s.dur=d)));
+    renderTracks();
+    genBars();
+    select(0);
+  } catch(e) {
+    loadingScreen.innerHTML='<div class="spinner"></div><span style="color:#f55">Failed to load. Refresh.</span>';
+    console.error(e);
+  }
+}
+
+function renderTracks() {
+  tracklist.innerHTML='';
+  songs.forEach((s,i)=>{
+    let li = document.createElement('li');
+    li.className='track';
+    li.innerHTML=`
+      <button class="track-btn">
+        <span class="num">${i+1}</span>
+        <div class="soundbars">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:0ms"></rect>
+            <rect x="7" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-200ms"></rect>
+            <rect x="11" y="10" width="2" height="6" rx="1" class="bar" style="animation-delay:-400ms"></rect>
+            <rect x="15" y="8" width="2" height="10" rx="1" class="bar" style="animation-delay:-600ms"></rect>
+            <rect x="19" y="9" width="2" height="8" rx="1" class="bar" style="animation-delay:-800ms"></rect>
+          </svg>
+        </div>
+        <div class="track-info">
+          <div class="name">${s.name}</div>
+          <div class="sub">${s.dur?fmt(s.dur):'--:--'}</div>
+        </div>
+        <button class="more-btn">&#8942;</button>
+      </button>`;
+    li.dataset.idx=i;
+    li.querySelector('.track-btn').onclick=e=>{if(e.target.closest('.more-btn'))return;select(i);play()};
+    tracklist.appendChild(li);
+  });
+}
+
+function select(i) {
+  currentIdx=i;
+  let s=songs[i];
+  if(!s) return;
+  playbarTitle.textContent=s.name;
+  totTime.textContent=fmt(s.dur);
+  audio.src=s.url;
+  audio.load();
+  document.querySelectorAll('.track').forEach(el=>el.classList.remove('active'));
+  let el=tracklist.querySelector(`[data-idx="${i}"]`);
+  if(el){el.classList.add('active');el.scrollIntoView({block:'nearest',behavior:'smooth'})}
+  setTimeout(()=>{
+    let tw=document.querySelector('.title-wrap .scroll');
+    if(tw)tw.classList.toggle('active',tw.scrollWidth>tw.parentElement.clientWidth);
+  },100);
+  stopWaveform();
+}
+
+function play() {
+  audio.play().then(()=>{
+    playing=true;
+    setPauseIcon();
+    discSlide.classList.add('visible','playing');
+    playbarArt.classList.add('playing');
+    document.querySelectorAll('.track').forEach(el=>el.classList.remove('playing'));
+    let el=tracklist.querySelector(`[data-idx="${currentIdx}"]`);
+    if(el)el.classList.add('playing');
+    startWaveform();
+  }).catch(()=>{});
+}
+
+function pause() {
+  audio.pause();
+  playing=false;
+  setPlayIcon();
+  discSlide.classList.remove('playing');
+  playbarArt.classList.remove('playing');
+  document.querySelectorAll('.track').forEach(el=>el.classList.remove('playing'));
+  stopWaveform();
+}
+
+function toggle() {
+  playing?pause():play();
+}
+
+function getNextIdx(fwd){
+  if(shuffled){
+    let n;
+    do{n=Math.floor(Math.random()*songs.length)}while(n===currentIdx&&songs.length>1);
+    return n;
+  }
+  return fwd?currentIdx<songs.length-1?currentIdx+1:0:currentIdx>0?currentIdx-1:songs.length-1;
+}
+
+playBtn.onclick=toggle;
+prevBtn.onclick=()=>{let n=getNextIdx(0);select(n);play()};
+nextBtn.onclick=()=>{let n=getNextIdx(1);select(n);play()};
+
+audio.addEventListener('timeupdate',()=>{
+  if(audio.duration){
+    curTime.textContent=fmt(audio.currentTime);
+    drawWaveform();
+  }
+});
+audio.addEventListener('ended',()=>nextBtn.click());
+audio.addEventListener('loadedmetadata',()=>{totTime.textContent=fmt(audio.duration)});
+
+// Waveform click to seek
+waveformWrap.addEventListener('click',e=>{
+  const r=waveformWrap.getBoundingClientRect();
+  const pct=(e.clientX-r.left)/r.width;
+  if(audio.duration)audio.currentTime=pct*audio.duration;
+});
+
+// Resize canvas on window resize
+window.addEventListener('resize',()=>{if(!playbarOuter.classList.contains('hidden'))resizeCanvas()});
+
+shuffleToggle.onclick=()=>{
+  shuffled=!shuffled;
+  shuffleToggle.style.opacity=shuffled?'1':'.5';
+};
+
+playAllBtn.onclick=()=>{
+  if(playing){pause()}else{if(!audio.src)select(0);play()}
+};
+
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&e.target===document.body){e.preventDefault();toggle()}
+  if(e.code==='ArrowLeft')prevBtn.click();
+  if(e.code==='ArrowRight')nextBtn.click();
+});
+
+// 3D tilt
+function getTiltTransform(e){
+  let r=tiltGroup.getBoundingClientRect();
+  let px=(e.clientX-r.left)/r.width;
+  let py=(e.clientY-r.top)/r.height;
+  let nx=(px-.5)*2;
+  let ny=(py-.5)*2;
+  tiltGroup.style.transform=`perspective(900px) rotateX(${ny*-6}deg) rotateY(${nx*6}deg) scale(1.03)`;
+  tiltGroup.style.setProperty('--gx',((1-px)*100).toFixed(1)+'%');
+  tiltGroup.style.setProperty('--gy',((1-py)*100).toFixed(1)+'%');
+}
+tiltGroup.addEventListener('mousemove',getTiltTransform);
+tiltGroup.addEventListener('mouseleave',()=>{
+  tiltGroup.style.transform='perspective(900px) rotateX(0) rotateY(0) scale(1)';
+});
+
+loadSongs();
+</script>
+
+
+</body></html>
